@@ -1,0 +1,104 @@
+---
+title: "datathon_eda"
+output: html_document
+date: "2025-03-29"
+---
+
+```{r}
+library(tidyverse)
+full_data<- read.csv("coded_reshaped_mdg.csv")
+country_metadata<- read.csv("country_metadata.csv")
+```
+
+```{r}
+library(dplyr)
+full_data<- full_data |>
+  left_join(country_metadata |>
+              select(Code, Region, Income.Group, Latest.trade.data, Latest.industrial.data, Latest.agricultural.census, System.of.trade), by = c("Country.Code" = "Code"))
+```
+
+```{r}
+library(naniar)
+library(VIM)
+library(visdat)
+gg_miss_var(full_data)
+vis_dat(full_data)
+gg_miss_upset(full_data)
+```
+
+```{r}
+tb_data <- full_data |>
+  select(Country.Code, Region, Income.Group, Country.Name, Year, debt_relief_committed_hipc, debt_relief_delivered_mdri, hipc_status, debt_relief_committed_hipc_mdri, debt_service_pct, debt_service_ppg_imf_pct, co2_emissions_kt, co2_emissions_percap, co2_emissions_by_gdp, pct_urban_pop_slums, pct_annual_freshwater_withdrawals, renew_freshwater_percap, cellular_subscriptions, phone_subscriptions, internet_users, gni, gni_percap, lit_rate_15.24_female_pct, lit_rate_15.24_male_pct, lit_rate_15.24_total_pct, lit_rate_15_plus_pct, school_attend_ratio_orphans, school_enroll_primary_gross_gpi, school_enroll_primsec_gross_gpi, school_enroll_second_gross_gpi, school_enroll_tertiary_gross_gpi, school_enroll_primary_pct, lit_rate_15.24_female_pct, lit_rate_15.24_male_pct, lit_rate_15.24_total_pct, lit_rate_15_plus_pct, primary_completion_rate_total, prim_enroll_rate, persistence_primary_female_pct, persistence_primary_male_pct, persistence_primary_total_pct, immunization_measles_pct_12.23mos, pregnant_prenatal_4visits_pct, pregnant_prenatal_pct, ari_trmt_under5_pct, births_skilled_pct, tb_trt_success_rate, tb_detect_rate, tb_incidence, tb_death_rate, incomeshare_20pct, poverty_headcount_ratio_pct, poverty_gap, poverty_gap_belowlines, poverty_pop_belowlines_pct, poverty_gap_urban_belowlines, poverty_gap_rural_belowlines, poverty_pop_rural_belowlines_pct, poverty_pop_urban_belowlines_pct, pct_undernourished, mortality_rate_infant, life_exp, pop_total, Year)
+
+tb_data <- subset(health_data, Region!="")
+tb_data$Income.Group <- factor(x = tb_data$Income.Group, levels = c("Low income", "Lower middle income", "Upper middle income", "High income")) 
+
+tb_data <- tb_data %>% remove_missing(vars = "Income.Group")
+```
+
+```{r}
+gg_miss_var(tb_data)
+vis_dat(tb_data)
+gg_miss_upset(tb_data)
+```
+```{r}
+library(pheatmap)
+# correlation matrix
+numeric_complete <- tb_data |>
+  dplyr::select(where(is.numeric))
+
+cor_matrix<- cor(numeric_complete, use = "pairwise.complete.obs")
+
+# display correlations in a heatmap
+pdf("feature_correlations.pdf", width = 10, height = 8)
+pheatmap(cor_matrix, 
+         color = colorRampPalette(c("steelblue", "white", "darkorange1"))(100),
+         main = "Feature Correlations", cluster_cols = FALSE, cluster_rows = FALSE)
+```
+
+```{r}
+dv <- "tb_death_rate"
+high_corr <- which(abs(cor_matrix) > 0.5 & abs(cor_matrix) < 1, arr.ind = TRUE)
+high_corr_pairs <- data.frame(
+  Feature1 = rownames(cor_matrix)[high_corr[, 1]],
+  Feature2 = colnames(cor_matrix)[high_corr[, 2]],
+  Correlation = cor_matrix[high_corr]
+)
+
+high_corr_pairs <- high_corr_pairs[!duplicated(t(apply(high_corr_pairs[, 1:2], 1, sort))), ]
+
+filtered_pairs <- high_corr_pairs |>
+  filter(Feature1 == dv | Feature2 == dv) |>
+  arrange(desc(abs(Correlation)))
+
+print(filtered_pairs)
+```
+```{r}
+highest_corr_with_tb_death_rate<- tb_data |>
+  select(tb_death_rate, tb_incidence, tb_detect_rate, mortality_rate_infant, poverty_headcount_ratio_pct, life_exp, births_skilled_pct, persistence_primary_male_pct, persistence_primary_female_pct, persistence_primary_total_pct, poverty_gap, internet_users, pct_undernourished, primary_completion_rate_total, lit_rate_15.24_female_pct, lit_rate_15.24_male_pct, phone_subscriptions, lit_rate_15_plus_pct, immunization_measles_pct_12.23mos, pct_urban_pop_slums, cellular_subscriptions, prim_enroll_rate, Region, Income.Group, Country.Code)
+```
+
+```{r}
+numeric_complete <- highest_corr_with_tb_death_rate |>
+  dplyr::select(where(is.numeric))
+
+cor_matrix<- cor(numeric_complete, use = "pairwise.complete.obs")
+high_corr <- which(abs(cor_matrix) > 0.8 & abs(cor_matrix) < 1, arr.ind = TRUE)
+
+high_corr_pairs <- data.frame(
+  Feature1 = rownames(cor_matrix)[high_corr[, 1]],
+  Feature2 = colnames(cor_matrix)[high_corr[, 2]],
+  Correlation = cor_matrix[high_corr]
+)
+
+high_corr_pairs <- high_corr_pairs[!duplicated(t(apply(high_corr_pairs[, 1:2], 1, sort))), ]
+
+print(high_corr_pairs)
+```
+
+```{r}
+tb_data <- tb_data |>
+  filter(Year == 2015)
+```
+
+
