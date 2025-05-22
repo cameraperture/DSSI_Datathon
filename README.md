@@ -3,6 +3,8 @@ Here you can find the data and code used in our submission for the 2025 Harvey M
 
 Code for our Shiny dashboard (visualizing how global tuberculosis death rates with various economic, educational and health factors) is available in the dssi_app folder.
 
+![Dashboard](./dashboard.png)
+
 Datathon_EDA.Rmd contains the code for data wrangling.
 
 ![Variable Correlation Matrix](./feature_correlations.jpg)
