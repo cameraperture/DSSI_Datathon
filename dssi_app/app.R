@@ -1,6 +1,7 @@
 library(shiny)
 library(tidyverse)
 library(RColorBrewer)
+library(rsconnect)
 
 tb_data <- read.csv("tb_data.csv")
 
@@ -52,15 +53,20 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      plotOutput("scatterPlot", height = "600px")
+      plotOutput("scatterPlot", height = "600px", width = "100%")
     )
   )
 )
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   output$scatterPlot <- renderPlot({
     req(input$xvar)
+    
+    plot_width <- session$clientData$output_scatterPlot_width
+    if (is.null(plot_width)) plot_width <- 600
+
+    font_scale <- min(max(plot_width / 1000, 0.7), 1.0)
     
     ggplot(tb_data, aes(x = .data[[input$xvar]], y = tb_death_rate)) +
       geom_point(aes(size = pop_total, color = Region), alpha = 0.7) +
@@ -76,10 +82,10 @@ server <- function(input, output) {
         color = "Region"
       ) +
       theme(
-        plot.title = element_text(face = "bold", size = 37),
-        axis.title = element_text(face = "bold", size = 25),
-        legend.title = element_text(face = "bold", size = 25),
-        legend.text = element_text(size = 20)
+        plot.title = element_text(face = "bold", size = 16 * font_scale),
+        axis.title = element_text(face = "bold", size = 11 * font_scale),
+        legend.title = element_text(face = "bold", size = 11 * font_scale),
+        legend.text = element_text(size = 10 * font_scale)
       )
   })
 }

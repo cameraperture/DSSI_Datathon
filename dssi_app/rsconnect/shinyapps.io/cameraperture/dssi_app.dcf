@@ -1,0 +1,10 @@
+name: dssi_app
+title:
+username: cameraperture
+account: cameraperture
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14804368
+bundleId: 10322193
+url: https://cameraperture.shinyapps.io/dssi_app/
+version: 1
